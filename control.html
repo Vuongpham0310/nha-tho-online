@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Nhà thờ online · Điều khiển</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #f4efe6; --surface: #fbf8f2; --ink: #26190f; --muted: #6e5d4b; --line: #ddd0bc; --field: #fffdf9;
+        --acc: #7a4b16; --acc-ink: #fff; --acc-soft: rgba(122, 75, 22, 0.1);
+        --ok: #2f6b34; --bad: #a3271f; --warn: #8a5a10;
+        --font: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root { --bg: #15100c; --surface: #1d1611; --ink: #f1e7d6; --muted: #b3a089; --line: #3a2d22; --field: #120d09;
+          --acc: #e0bd72; --acc-ink: #1d1206; --acc-soft: rgba(224, 189, 114, 0.12); --ok: #7fc187; --bad: #f08a80; --warn: #e0bd72; }
+      }
+      * { box-sizing: border-box; }
+      html { accent-color: var(--acc); scrollbar-color: var(--line) transparent; }
+      ::selection { background: var(--acc); color: var(--acc-ink); }
+      body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 var(--font); }
+      a { color: var(--acc); text-underline-offset: 3px; }
+      :focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
+
+      /* Thanh trạng thái cố định: điều streamer cần liếc khi đang live */
+      .bar { position: sticky; top: 0; z-index: 2; background: var(--surface); border-bottom: 1px solid var(--line); padding: 12px 24px; }
+      .bar-top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 20px; }
+      .bar h1 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.01em; }
+      .bar h1 span { font-weight: 500; color: var(--muted); }
+      .bar-actions { margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; white-space: nowrap; }
+      .status { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; }
+      .status::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+      .status.ok { color: var(--ok); }
+      .status.bad { color: var(--bad); }
+      .status.wait { color: var(--warn); }
+      .readout { display: flex; flex-wrap: wrap; gap: 4px 28px; margin: 10px 0 0; font-variant-numeric: tabular-nums; }
+      .readout div { display: flex; gap: 8px; align-items: baseline; }
+      .readout dt { color: var(--muted); font-size: 13px; }
+      .readout dd { margin: 0; font-weight: 600; }
+      .hint { margin: 8px 0 0; color: var(--warn); font-size: 13px; font-weight: 500; }
+      .hint:empty { display: none; }
+
+      main { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 0 56px; padding: 8px 24px 48px; max-width: 1280px; }
+      @media (max-width: 900px) { main { grid-template-columns: 1fr; } .bar { position: static; } .bar-actions { margin-left: 0; } }
+      section { padding: 24px 0; border-bottom: 1px solid var(--line); }
+      h2 { margin: 0 0 4px; font-size: 19px; font-weight: 700; }
+      .desc { margin: 0 0 14px; color: var(--muted); font-size: 13px; max-width: 62ch; }
+      label { display: block; margin: 14px 0 6px; font-size: 13px; font-weight: 600; }
+      input[type="text"], input[type="number"], textarea, select { width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px;
+        background: var(--field); color: var(--ink); font: inherit; transition: border-color 0.15s; }
+      input:hover, textarea:hover, select:hover { border-color: var(--muted); }
+      input:focus-visible, textarea:focus-visible, select:focus-visible { outline: 2px solid var(--acc); outline-offset: 0; border-color: var(--acc); }
+      textarea { min-height: 96px; resize: vertical; font-size: 14px; }
+      textarea.code { font-family: ui-monospace, Consolas, monospace; font-size: 13px; line-height: 1.6; }
+      input[type="range"] { width: 100%; }
+      .two { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; }
+      .checks { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px 16px; margin-top: 12px; }
+      .checks label { display: flex; gap: 8px; align-items: center; margin: 0; font-weight: 500; font-size: 14px; }
+      .row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; align-items: center; }
+      .ids { margin: 6px 0 0; color: var(--muted); font-size: 12px; line-height: 1.7; }
+      .ids code { font-size: 12px; padding: 1px 5px; border-radius: 4px; background: var(--acc-soft); color: var(--ink); }
+
+      button { padding: 8px 14px; border-radius: 6px; border: 1px solid var(--line); background: var(--field); color: var(--ink);
+        font: 600 14px var(--font); cursor: pointer; transition: background 0.15s, border-color 0.15s, transform 0.1s; }
+      button:hover { border-color: var(--muted); }
+      button:active { transform: translateY(1px); }
+      button.primary { background: var(--acc); border-color: var(--acc); color: var(--acc-ink); }
+      button.primary:hover { filter: brightness(1.08); }
+      button.danger { color: var(--bad); }
+      button.danger:hover { border-color: var(--bad); background: rgba(163, 39, 31, 0.06); }
+      button:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+      .savebar { position: sticky; bottom: 0; display: flex; align-items: center; gap: 12px; padding: 12px 0; background: var(--bg); border-top: 1px solid var(--line); }
+      .dirty { color: var(--warn); font-size: 13px; font-weight: 600; }
+      .dirty:empty { display: none; }
+
+      pre { max-height: 320px; overflow: auto; margin: 12px 0 0; padding: 12px; background: var(--field); border: 1px solid var(--line); border-radius: 6px;
+        font: 12px/1.6 ui-monospace, Consolas, monospace; white-space: pre-wrap; word-break: break-all; }
+      pre:empty::before { content: "Chưa có sự kiện."; color: var(--muted); font-family: var(--font); }
+      table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 12px; font-variant-numeric: tabular-nums; }
+      th { color: var(--muted); font-weight: 600; font-size: 12px; }
+      th, td { border-bottom: 1px solid var(--line); padding: 6px 4px; text-align: right; }
+      th:first-child, td:first-child { text-align: left; }
+    </style>
+  </head>
+  <body>
+    <header class="bar">
+      <div class="bar-top">
+        <h1>Nhà thờ online <span>· Điều khiển</span></h1>
+        <span id="overlayStatus" class="status wait">Đang chờ overlay…</span>
+        <span id="wsStatus" class="status wait">TikFinity: chưa rõ</span>
+        <div class="bar-actions">
+          <a href="./" target="_blank" rel="noopener">Mở overlay</a>
+          <button id="pause">Tạm dừng tương tác</button>
+          <button id="clearQueue">Xóa hàng đợi</button>
+        </div>
+      </div>
+      <dl class="readout">
+        <div><dt>FPS</dt><dd id="tFps">–</dd></div>
+        <div><dt>Nhân vật</dt><dd id="tPeople">–</dd></div>
+        <div><dt>Chờ / đang chạy</dt><dd id="tQueue">–</dd></div>
+        <div><dt>Quà <span id="tMode">–</span></dt><dd id="tGifts">–</dd></div>
+        <div><dt>Lời / người cầu nguyện</dt><dd id="tPray">–</dd></div>
+        <div><dt>Âm thanh</dt><dd id="tAudio">–</dd></div>
+      </dl>
+      <p class="hint" id="audioHint"></p>
+    </header>
+
+    <main>
+      <div>
+        <section>
+          <h2>Màn hình live</h2>
+          <p class="desc">Chữ và bảng quà người xem thấy trên overlay.</p>
+          <label for="banner">Băng rôn — dòng 1 in hoa, dòng 2 in nghiêng</label>
+          <textarea id="banner" style="min-height: 64px"></textarea>
+          <label for="giftMap">Quà → nghi thức</label>
+          <textarea id="giftMap" class="code" spellcheck="false"></textarea>
+          <p class="ids" id="ritualIds"></p>
+          <label for="defaultRitual">Quà không có trong bảng</label>
+          <select id="defaultRitual"></select>
+          <label for="goalLabel">Mục tiêu quà (tên · số lượng)</label>
+          <div class="two">
+            <input type="text" id="goalLabel" />
+            <input type="number" id="goalTarget" min="1" />
+          </div>
+          <label for="keywords">Từ khóa cầu nguyện, cách nhau bởi dấu phẩy (gõ có dấu hay không đều được)</label>
+          <textarea id="keywords" style="min-height: 64px"></textarea>
+          <div class="checks">
+            <label><input type="checkbox" id="freeActions" /> Nghi thức miễn phí khi vào, comment, thả tim</label>
+            <label><input type="checkbox" id="disclaimer" /> Dòng ghi chú cuối màn hình</label>
+          </div>
+        </section>
+
+        <section>
+          <h2>Nhân vật</h2>
+          <div class="two">
+            <div>
+              <label for="max">Tối đa (≤ 120)</label>
+              <input type="number" id="max" min="0" max="120" />
+            </div>
+            <div>
+              <label for="protectMin">Giữ chỗ sau khi tặng quà (phút)</label>
+              <input type="number" id="protectMin" min="0" max="120" />
+            </div>
+          </div>
+          <div class="checks"><label><input type="checkbox" id="shadows" /> Bóng đổ (tắt nếu máy yếu)</label></div>
+        </section>
+
+        <section>
+          <h2>Nghi thức &amp; âm thanh</h2>
+          <div class="checks" id="enabled"></div>
+          <div class="two" style="grid-template-columns: 1fr 1fr">
+            <div><label for="volBg">Nhạc nền organ</label><input type="range" id="volBg" min="0" max="1" step="0.05" /></div>
+            <div><label for="volFx">Âm nghi thức</label><input type="range" id="volFx" min="0" max="1" step="0.05" /></div>
+          </div>
+          <div class="checks"><label><input type="checkbox" id="bells" /> Chuông nền mỗi 15 phút</label></div>
+        </section>
+
+        <div class="savebar">
+          <button class="primary" id="save">Lưu &amp; áp dụng</button>
+          <button id="defaults">Về mặc định</button>
+          <span class="dirty" id="dirty"></span>
+        </div>
+
+        <section>
+          <h2>Đặt lại</h2>
+          <p class="desc">Không hoàn tác được. Cấu hình luôn được giữ.</p>
+          <div class="row">
+            <button class="danger" id="resetCrowd">Xóa nhân vật</button>
+            <button class="danger" id="resetGoal">Đặt lại mục tiêu</button>
+            <button class="danger" id="resetSession">Đặt lại cả phiên</button>
+          </div>
+        </section>
+      </div>
+
+      <div>
+        <section>
+          <h2>Giả lập</h2>
+          <p class="desc">Sự kiện giả lập mang nhãn [TEST] và đếm riêng, không cộng vào số liệu live. Giả lập số lượng lớn tự khóa khi overlay đã nhận sự kiện thật.</p>
+          <div class="row">
+            <button data-sim="join">Có người vào</button>
+            <button data-sim="chat">Comment cầu nguyện</button>
+            <button data-sim="like">Thả tim</button>
+            <button data-sim="share">Chia sẻ</button>
+          </div>
+          <label for="simGift">Tặng quà</label>
+          <div class="row" style="margin-top: 0">
+            <select id="simGift" style="flex: 2"></select>
+            <select id="simCombo" style="flex: 1" aria-label="Số lượng">
+              <option value="1">×1</option><option value="3">combo ×3</option><option value="5">combo ×5</option>
+            </select>
+            <button id="simGiftBtn">Gửi</button>
+          </div>
+          <div class="row">
+            <button class="bulk" data-bulk="virtual50">Thêm 50 người</button>
+            <button class="bulk" data-bulk="stress">Dồn sự kiện 10 giây</button>
+            <button class="bulk" data-bulk="leak">Đo rò bộ nhớ (10 vòng)</button>
+          </div>
+          <table id="leak" hidden>
+            <thead><tr><th>Vòng</th><th>FPS</th><th>Geo</th><th>Tex</th><th>Calls</th><th>Heap MB</th><th>Obj</th><th>User</th><th>Nhãn</th><th>Queue</th><th>Hạt</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </section>
+
+        <section>
+          <h2>Nhật ký sự kiện</h2>
+          <p class="desc">50 sự kiện thô gần nhất từ TikFinity. Khi live thử, copy vào <code>test/fixtures/events.json</code> để kiểm lại cách đếm quà.</p>
+          <div class="row"><button id="copyLog">Copy nhật ký</button></div>
+          <pre id="log"></pre>
+        </section>
+      </div>
+    </main>
+    <script type="module" src="/src/control.js"></script>
+  </body>
+</html>

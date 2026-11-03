@@ -1,0 +1,19 @@
+{
+  "name": "nha-tho-online-live",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Overlay live TikTok: đi nhà thờ online, nhận sự kiện từ TikFinity",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node --test \"test/*.test.js\""
+  },
+  "dependencies": {
+    "three": "^0.160.0"
+  },
+  "devDependencies": {
+    "vite": "^5.4.11"
+  }
+}

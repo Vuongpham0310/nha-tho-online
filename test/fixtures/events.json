@@ -1,0 +1,15 @@
+{
+  "_note": "Dựng theo tài liệu TikFinity / TikTok-Live-Connector. Thay bằng payload thật copy từ 'Nhật ký event thô' trên control.",
+  "chat": { "event": "chat", "data": { "userId": "7001", "uniqueId": "an.nguyen", "nickname": "An Nguyễn", "profilePictureUrl": "https://example.invalid/a.jpg", "comment": "Lạy Chúa, xin thương xót 🙏", "msgId": "c1" } },
+  "giftComboStreak": [
+    { "event": "gift", "data": { "userId": "7002", "uniqueId": "binh", "nickname": "Bình", "giftId": 5655, "giftName": "Rose", "giftType": 1, "repeatCount": 1, "repeatEnd": false, "groupId": "g100", "msgId": "m101", "diamondCount": 1 } },
+    { "event": "gift", "data": { "userId": "7002", "uniqueId": "binh", "nickname": "Bình", "giftId": 5655, "giftName": "Rose", "giftType": 1, "repeatCount": 3, "repeatEnd": false, "groupId": "g100", "msgId": "m102", "diamondCount": 1 } },
+    { "event": "gift", "data": { "userId": "7002", "uniqueId": "binh", "nickname": "Bình", "giftId": 5655, "giftName": "Rose", "giftType": 1, "repeatCount": 5, "repeatEnd": true, "groupId": "g100", "msgId": "m103", "diamondCount": 1 } }
+  ],
+  "giftNormal": { "event": "gift", "data": { "userId": "7003", "uniqueId": "chi", "nickname": "Chi", "giftId": 5879, "giftName": "Doughnut", "giftType": 2, "repeatCount": 1, "repeatEnd": true, "msgId": "m200", "diamondCount": 30 } },
+  "roomUser": { "event": "roomUser", "data": { "viewerCount": 84 } },
+  "like": { "event": "like", "data": { "userId": "7004", "uniqueId": "dung", "nickname": "Dũng", "likeCount": 15, "totalLikeCount": 900 } },
+  "share": { "event": "share", "data": { "userId": "7005", "uniqueId": "em", "nickname": "Em" } },
+  "member": { "event": "member", "data": { "userId": "7006", "uniqueId": "giang", "nickname": "Giang" } },
+  "noUser": { "event": "chat", "data": { "comment": "amen" } }
+}
