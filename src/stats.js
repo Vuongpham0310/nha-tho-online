@@ -1,6 +1,6 @@
 // Thống kê phiên: tách LIVE thật và TEST (giả lập), không trộn.
 function bucket() {
-  return { gifts: {}, giftTotal: 0, goalBase: 0, prayers: 0, prayerUsers: new Set(), shares: 0, likes: 0, follows: 0 };
+  return { gifts: {}, giftTotal: 0, diamonds: 0, wishes: 0, comments: 0, shares: 0, likes: 0, follows: 0 };
 }
 
 export function createStats() {
@@ -21,9 +21,11 @@ export function createStats() {
       const b = s.of(ev);
       b.gifts[ev.giftName] = (b.gifts[ev.giftName] || 0) + ev.count;
       b.giftTotal += ev.count;
+      b.diamonds += (ev.diamonds || 0) * ev.count;
     },
-    resetGoal() {
-      for (const b of [s.live, s.test]) b.goalBase = b.giftTotal;
+    // Vòng mới: cây và mốc tính lại từ đầu, giữ tổng quà
+    newRound() {
+      for (const b of [s.live, s.test]) Object.assign(b, { diamonds: 0, wishes: 0, comments: 0, likes: 0 });
     },
     reset() {
       s.live = bucket();
@@ -35,5 +37,5 @@ export function createStats() {
   return s;
 }
 
-// Lệnh giả lập lớn (50 người ảo, stress, chu kỳ rò rỉ) chỉ được chạy khi chưa nhận sự kiện thật.
+// Lệnh giả lập lớn chỉ được chạy khi chưa nhận sự kiện thật.
 export const allowBulkSimulation = (stats) => !stats.sawLive;

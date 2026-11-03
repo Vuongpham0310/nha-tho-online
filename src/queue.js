@@ -1,25 +1,4 @@
-// Danh sách nghi thức + hàng đợi hiệu ứng. Logic thuần; phần vẽ nằm ở effects.js.
-export const RITUALS = [
-  { id: "lam-dau", label: "Làm dấu Thánh Giá", size: "small", verb: "làm dấu Thánh Giá" },
-  { id: "bai-goi", label: "Bái gối", size: "small", verb: "bái gối trước Nhà Tạm" },
-  { id: "quy-cau-nguyen", label: "Quỳ cầu nguyện", size: "small", verb: "quỳ cầu nguyện" },
-  { id: "lan-chuoi", label: "Lần chuỗi Mân Côi", size: "small", verb: "lần chuỗi Mân Côi" },
-  { id: "thap-nen", label: "Thắp nến khấn", size: "small", verb: "thắp nến khấn" },
-  { id: "dang-hoa", label: "Dâng hoa kính Đức Mẹ", size: "big", verb: "dâng hoa kính Đức Mẹ" },
-  { id: "vieng-thanh-the", label: "Viếng Thánh Thể", size: "big", verb: "viếng Thánh Thể" },
-  { id: "cau-linh-hon", label: "Cầu cho các linh hồn", size: "big", verb: "cầu cho các linh hồn" },
-  { id: "hat-thanh-ca", label: "Hát thánh ca", size: "big", verb: "mời mọi người hát thánh ca" },
-];
-export const RITUAL = Object.fromEntries(RITUALS.map((r) => [r.id, r]));
-
-// Câu chú thích: tối đa 3 tên + "và N người khác", ×tổng nếu > 1.
-export function caption(entry, maxNames = 3) {
-  const names = entry.users.map((u) => u.nickname);
-  let who = names.slice(0, maxNames).join(", ");
-  if (names.length > maxNames) who += " và " + (names.length - maxNames) + " người khác";
-  return who + " " + RITUAL[entry.ritualId].verb + (entry.total > 1 ? " ×" + entry.total : "");
-}
-
+// Hàng đợi hiệu ứng: gộp cùng loại trong 2s, hiệu ứng lớn chạy lần lượt, nhỏ song song có giới hạn.
 // start(entry) -> handle { update(dt) -> true khi xong, cancel?() }
 // end(entry) luôn được gọi đúng 1 lần cho mỗi mục đã bắt đầu (kể cả lỗi/hủy) để nhả khóa.
 export function createQueue({ start, end, now = () => Date.now(), maxSmall = 3, maxQueue = 30, mergeMs = 2000 }) {

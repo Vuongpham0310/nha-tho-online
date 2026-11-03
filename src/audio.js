@@ -1,5 +1,5 @@
-// Âm thanh WebAudio, 2 kênh: nhạc nền (lặp liên tục) + nghi thức (chuông, thánh ca).
-// Nhạc nền lấy từ public/audio/nhac-nen.mp3; thiếu file thì tự tổng hợp hợp âm organ. Chuông: bell.mp3 nếu có.
+// Âm thanh WebAudio, 2 kênh: nhạc nền (lặp liên tục) + hiệu ứng (chuông nhỏ, vút, bùm).
+// Nhạc nền lấy từ public/audio/nhac-nen.mp3; thiếu file thì tự tổng hợp hợp âm nhẹ.
 
 const MAX_FX = 3;
 // Vòng hợp âm chậm: C - Am - F - G (tần số Hz)
@@ -9,7 +9,6 @@ const CHORDS = [
   [87.31, 174.61, 220.0, 261.63],
   [98.0, 146.83, 246.94, 293.66],
 ];
-const HYMN = [392, 392, 440, 392, 523.25, 493.88, 392, 392, 440, 392, 587.33, 523.25];
 
 export function createAudio() {
   let ctx = null;
@@ -57,7 +56,17 @@ export function createAudio() {
     }, 8000);
   }
 
-  // Giới hạn số âm nghi thức phát cùng lúc
+  let noiseBuf = null;
+  function noise() {
+    if (!noiseBuf) {
+      noiseBuf = ctx.createBuffer(1, ctx.sampleRate * 1.3, ctx.sampleRate);
+      const d = noiseBuf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    return noiseBuf;
+  }
+
+  // Giới hạn số âm hiệu ứng phát cùng lúc
   function slot(dur) {
     const now = ctx.currentTime;
     fxEnd = fxEnd.filter((t) => t > now);
@@ -108,7 +117,7 @@ export function createAudio() {
       duck.connect(bg).connect(ctx.destination);
       fx.connect(ctx.destination);
       api.setVolumes(vol.bg, vol.fx);
-      await Promise.all([loadFile("nhac-nen"), loadFile("bell")]);
+      await loadFile("nhac-nen");
       startBackground();
     },
     setVolumes(b, f) {
@@ -121,42 +130,42 @@ export function createAudio() {
       if (!ctx || !slot(2)) return;
       bellAt(880, ctx.currentTime, gain * 0.25);
     },
-    bell() {
-      if (!ctx || !slot(5)) return;
-      duckFor(4);
-      if (files.bell) {
-        const s = ctx.createBufferSource();
-        s.buffer = files.bell;
-        s.connect(fx);
-        s.start();
-        return;
-      }
-      for (let i = 0; i < 3; i++) bellAt(196, ctx.currentTime + i * 1.6, 0.35);
-    },
-    swell() {
-      if (!ctx || !slot(6)) return;
+    // Tiếng "vút" khi điều ước bay lên: nhiễu trắng qua lọc quét lên
+    whoosh() {
+      if (!ctx || !slot(1.2)) return;
       const t = ctx.currentTime;
-      for (const f of [261.63, 329.63, 392]) {
-        const o = ctx.createOscillator();
-        const g = ctx.createGain();
-        o.type = "triangle";
-        o.frequency.value = f;
-        g.gain.setValueAtTime(0, t);
-        g.gain.linearRampToValueAtTime(0.06, t + 2.5);
-        g.gain.linearRampToValueAtTime(0, t + 6);
-        o.connect(g).connect(fx);
-        o.start(t);
-        o.stop(t + 6.1);
-      }
+      const src = ctx.createBufferSource();
+      src.buffer = noise();
+      const f = ctx.createBiquadFilter();
+      f.type = "bandpass";
+      f.Q.value = 1.2;
+      f.frequency.setValueAtTime(300, t);
+      f.frequency.exponentialRampToValueAtTime(2600, t + 0.9);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(0.22, t + 0.15);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 1);
+      src.connect(f).connect(g).connect(fx);
+      src.start(t);
+      src.stop(t + 1.05);
     },
-    hymn() {
-      if (!ctx || !slot(7)) return;
-      duckFor(6.5);
+    // Tiếng "bùm" pháo hoa: nhịp trầm + nhiễu tắt dần, nhạc nền nhỏ đi một chút
+    boom() {
+      if (!ctx || !slot(1.5)) return;
+      duckFor(1.2);
       const t = ctx.currentTime;
-      HYMN.forEach((f, i) => {
-        tone(f, t + i * 0.5, 0.9, 0.12, "triangle");
-        tone(f / 2, t + i * 0.5, 0.9, 0.06, "sine");
-      });
+      tone(70, t, 0.6, 0.35);
+      const src = ctx.createBufferSource();
+      src.buffer = noise();
+      const f = ctx.createBiquadFilter();
+      f.type = "lowpass";
+      f.frequency.value = 1800;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.25, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
+      src.connect(f).connect(g).connect(fx);
+      src.start(t);
+      src.stop(t + 1.25);
     },
   };
   return api;

@@ -1,9 +1,9 @@
 {
-  "name": "nha-tho-online-live",
+  "name": "cay-uoc-nguyen-live",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Overlay live TikTok: đi nhà thờ online, nhận sự kiện từ TikFinity",
+  "description": "Overlay live TikTok: Cây Ước Nguyện, nhận sự kiện từ TikFinity",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

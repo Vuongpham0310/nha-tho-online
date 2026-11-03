@@ -1,23 +1,34 @@
-// Chuẩn hóa chữ để so khớp: bỏ dấu, đ→d, chữ thường, bỏ mọi khoảng trắng và ký tự không phải chữ/số.
-export function normText(s) {
-  return String(s ?? "")
+// Bỏ dấu tiếng Việt, đ→d, chữ thường
+const fold = (s) =>
+  String(s ?? "")
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
     .replace(/[đĐ]/g, "d")
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, "");
-}
+    .toLowerCase();
 
-export const DEFAULT_KEYWORDS = ["amen", "alleluia", "haleluia", "lay chua", "lay chua giesu", "kinh mung maria", "chua ban binh an", "ta on chua", "xin chua thuong xot"];
+// Chuẩn hóa để so khớp: bỏ dấu, bỏ mọi khoảng trắng và ký tự không phải chữ/số.
+export const normText = (s) => fold(s).replace(/[^a-z0-9]/g, "");
 
-export function isPrayer(text, keywords = DEFAULT_KEYWORDS) {
+// Như normText nhưng giữ ranh giới từ: "Đồ  ngốc!" → "do ngoc"
+export const normWords = (s) => fold(s).replace(/[^a-z0-9]+/g, " ").trim();
+
+// Chuỗi có chứa một trong các từ khóa (so khớp không dấu, bỏ khoảng trắng)
+export function hasKeyword(text, keywords) {
   const t = normText(text);
-  if (!t) return false;
-  return keywords.some((k) => {
+  return !!t && keywords.some((k) => {
     const n = normText(k);
     return n && t.includes(n);
   });
 }
+
+// Che tên: giữ chữ cái đầu mỗi từ. "Đức Anh" → "Đ** A**"
+export const maskName = (s) =>
+  String(s ?? "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((w) => [...w][0] + "**")
+    .join(" ");
 
 // Cắt chuỗi theo ký tự hiển thị (không cắt đôi emoji).
 export function clip(s, n) {

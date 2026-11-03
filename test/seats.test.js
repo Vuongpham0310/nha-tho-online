@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createSeats } from "../src/seats.js";
 import { createRefCache } from "../src/refcache.js";
-import { SEAT_ORDER, SEAT_COUNT, ROWS, seatPos } from "../src/shared.js";
+import { SLOT_ORDER, SLOT_COUNT, slotPos, W } from "../src/layout.js";
 
 const make = (max = 3) => {
   let t = 1000;
@@ -10,12 +10,11 @@ const make = (max = 3) => {
   return { s, tick: (d = 1) => (t += d) };
 };
 
-test("lưới ghế: 120 chỗ, không trùng, chỗ đầu sát lối giữa hàng gần camera", () => {
-  assert.equal(SEAT_COUNT, 120);
-  assert.equal(new Set(SEAT_ORDER).size, 120);
-  const p = seatPos(SEAT_ORDER[0]);
-  assert.equal(p.row, ROWS - 1);
-  assert.ok(Math.abs(p.x) < 4);
+test("chỗ ngồi: không trùng, chỗ đầu ở hàng trước gần giữa", () => {
+  assert.equal(new Set(SLOT_ORDER).size, SLOT_COUNT);
+  const first = slotPos(SLOT_ORDER[0]);
+  assert.equal(first.row, Math.max(...SLOT_ORDER.map((i) => slotPos(i).row)));
+  assert.ok(Math.abs(first.x - W / 2) < 120);
 });
 
 test("người mới vào chỗ trống; người cũ tương tác giữ chỗ", () => {

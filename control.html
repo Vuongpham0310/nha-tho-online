@@ -3,20 +3,20 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Nhà thờ online · Điều khiển</title>
+    <title>Cây Ước Nguyện · Điều khiển</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <style>
       :root {
         color-scheme: light dark;
-        --bg: #f4efe6; --surface: #fbf8f2; --ink: #26190f; --muted: #6e5d4b; --line: #ddd0bc; --field: #fffdf9;
-        --acc: #7a4b16; --acc-ink: #fff; --acc-soft: rgba(122, 75, 22, 0.1);
+        --bg: #f3f0f8; --surface: #fbf9fe; --ink: #1f1830; --muted: #625a78; --line: #dcd4ea; --field: #ffffff;
+        --acc: #6b3fb0; --acc-ink: #fff; --acc-soft: rgba(107, 63, 176, 0.1);
         --ok: #2f6b34; --bad: #a3271f; --warn: #8a5a10;
         --font: "Be Vietnam Pro", "Segoe UI", system-ui, sans-serif;
       }
       @media (prefers-color-scheme: dark) {
-        :root { --bg: #15100c; --surface: #1d1611; --ink: #f1e7d6; --muted: #b3a089; --line: #3a2d22; --field: #120d09;
-          --acc: #e0bd72; --acc-ink: #1d1206; --acc-soft: rgba(224, 189, 114, 0.12); --ok: #7fc187; --bad: #f08a80; --warn: #e0bd72; }
+        :root { --bg: #120e1c; --surface: #1a1428; --ink: #efe8fb; --muted: #a99cc4; --line: #33294a; --field: #0e0a17;
+          --acc: #c9a6ff; --acc-ink: #1a1028; --acc-soft: rgba(201, 166, 255, 0.14); --ok: #7fc187; --bad: #f08a80; --warn: #e0bd72; }
       }
       * { box-sizing: border-box; }
       html { accent-color: var(--acc); scrollbar-color: var(--line) transparent; }
@@ -84,12 +84,21 @@
       th { color: var(--muted); font-weight: 600; font-size: 12px; }
       th, td { border-bottom: 1px solid var(--line); padding: 6px 4px; text-align: right; }
       th:first-child, td:first-child { text-align: left; }
+      .tiers { display: grid; grid-template-columns: auto 90px auto 1fr; gap: 8px 10px; align-items: center; font-size: 14px; }
+      .wish-list { list-style: none; margin: 0; padding: 0; max-height: 300px; overflow: auto; border: 1px solid var(--line); border-radius: 6px; }
+      .wish-list:empty::before { content: "Chưa có điều ước."; display: block; padding: 10px; color: var(--muted); font-size: 13px; }
+      .wish-list li { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-bottom: 1px solid var(--line); font-size: 14px; }
+      .wish-list li:last-child { border-bottom: 0; }
+      .wish-list .who { font-weight: 600; white-space: nowrap; }
+      .wish-list .what { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .wish-list .gifted { color: var(--acc); font-size: 12px; font-weight: 600; }
+      .wish-list button { padding: 3px 10px; font-size: 13px; }
     </style>
   </head>
   <body>
     <header class="bar">
       <div class="bar-top">
-        <h1>Nhà thờ online <span>· Điều khiển</span></h1>
+        <h1>Cây Ước Nguyện <span>· Điều khiển</span></h1>
         <span id="overlayStatus" class="status wait">Đang chờ overlay…</span>
         <span id="wsStatus" class="status wait">TikFinity: chưa rõ</span>
         <div class="bar-actions">
@@ -102,8 +111,9 @@
         <div><dt>FPS</dt><dd id="tFps">–</dd></div>
         <div><dt>Nhân vật</dt><dd id="tPeople">–</dd></div>
         <div><dt>Chờ / đang chạy</dt><dd id="tQueue">–</dd></div>
+        <div><dt>Điều ước</dt><dd id="tWishes">–</dd></div>
         <div><dt>Quà <span id="tMode">–</span></dt><dd id="tGifts">–</dd></div>
-        <div><dt>Lời / người cầu nguyện</dt><dd id="tPray">–</dd></div>
+        <div><dt>Cấp cây · điểm</dt><dd id="tTree">–</dd></div>
         <div><dt>Âm thanh</dt><dd id="tAudio">–</dd></div>
       </dl>
       <p class="hint" id="audioHint"></p>
@@ -113,50 +123,67 @@
       <div>
         <section>
           <h2>Màn hình live</h2>
-          <p class="desc">Chữ và bảng quà người xem thấy trên overlay.</p>
-          <label for="banner">Băng rôn — dòng 1 in hoa, dòng 2 in nghiêng</label>
-          <textarea id="banner" style="min-height: 64px"></textarea>
-          <label for="giftMap">Quà → nghi thức</label>
+          <label for="title">Tiêu đề</label>
+          <input type="text" id="title" />
+          <div class="two" style="grid-template-columns: 1fr 2fr">
+            <div><label for="hintWish">Thẻ trái</label><input type="text" id="hintWish" /></div>
+            <div><label for="hintWishSub">Dòng phụ</label><input type="text" id="hintWishSub" /></div>
+            <div><label for="hintGift">Thẻ phải</label><input type="text" id="hintGift" /></div>
+            <div><label for="hintGiftSub">Dòng phụ</label><input type="text" id="hintGiftSub" /></div>
+          </div>
+          <div class="checks"><label><input type="checkbox" id="disclaimer" /> Dòng ghi chú cuối màn hình</label></div>
+        </section>
+
+        <section>
+          <h2>Điều ước</h2>
+          <p class="desc">Comment bắt đầu bằng "Ước" thành điều ước. Tự chặn số điện thoại, đường link, gắn tên @, và các từ cấm dưới đây (so theo nguyên từ, không dấu).</p>
+          <label for="wishMaxLen">Độ dài tối đa (ký tự)</label>
+          <input type="number" id="wishMaxLen" min="10" max="60" />
+          <label for="banned">Từ cấm, cách nhau bởi dấu phẩy</label>
+          <textarea id="banned" style="min-height: 64px"></textarea>
+          <label>Điều ước đang treo trên cây</label>
+          <ul class="wish-list" id="wishList"></ul>
+        </section>
+
+        <section>
+          <h2>Quà → hiệu ứng</h2>
+          <p class="desc">Quà có tên trong bảng dùng hiệu ứng đã đặt. Quà khác tự chia tầng theo số xu của 1 món.</p>
+          <div class="tiers">
+            <span>Nhỏ: dưới</span><input type="number" id="tierMedium" min="1" /><span>xu →</span><select id="effSmall"></select>
+            <span>Vừa: dưới</span><input type="number" id="tierBig" min="1" /><span>xu →</span><select id="effMedium"></select>
+            <span>Lớn: dưới</span><input type="number" id="tierHuge" min="1" /><span>xu →</span><select id="effBig"></select>
+            <span>Rất lớn</span><span></span><span>→</span><select id="effHuge"></select>
+          </div>
+          <label for="giftMap">Theo tên quà (mỗi dòng: Tên quà = mã hiệu ứng)</label>
           <textarea id="giftMap" class="code" spellcheck="false"></textarea>
-          <p class="ids" id="ritualIds"></p>
-          <label for="defaultRitual">Quà không có trong bảng</label>
-          <select id="defaultRitual"></select>
-          <label for="goalLabel">Mục tiêu quà (tên · số lượng)</label>
-          <div class="two">
-            <input type="text" id="goalLabel" />
-            <input type="number" id="goalTarget" min="1" />
-          </div>
-          <label for="keywords">Từ khóa cầu nguyện, cách nhau bởi dấu phẩy (gõ có dấu hay không đều được)</label>
-          <textarea id="keywords" style="min-height: 64px"></textarea>
-          <div class="checks">
-            <label><input type="checkbox" id="freeActions" /> Nghi thức miễn phí khi vào, comment, thả tim</label>
-            <label><input type="checkbox" id="disclaimer" /> Dòng ghi chú cuối màn hình</label>
-          </div>
+          <p class="ids" id="effectIds"></p>
         </section>
 
         <section>
-          <h2>Nhân vật</h2>
-          <div class="two">
-            <div>
-              <label for="max">Tối đa (≤ 120)</label>
-              <input type="number" id="max" min="0" max="120" />
-            </div>
-            <div>
-              <label for="protectMin">Giữ chỗ sau khi tặng quà (phút)</label>
-              <input type="number" id="protectMin" min="0" max="120" />
-            </div>
-          </div>
-          <div class="checks"><label><input type="checkbox" id="shadows" /> Bóng đổ (tắt nếu máy yếu)</label></div>
-        </section>
-
-        <section>
-          <h2>Nghi thức &amp; âm thanh</h2>
-          <div class="checks" id="enabled"></div>
+          <h2>Tiến trình</h2>
+          <label for="levels">Điểm để lên cấp 1 → 6 (cách nhau bởi dấu phẩy)</label>
+          <input type="text" id="levels" />
+          <p class="desc" style="margin-top: 6px">Điểm cây = điều ước × 2 + xu + comment × 0,2 + tim ÷ 100.</p>
+          <label for="milestones">Mốc cộng đồng (mỗi dòng: số điều ước = tên hiệu ứng, đúng 5 dòng theo thứ tự)</label>
+          <textarea id="milestones" class="code" spellcheck="false" style="min-height: 120px"></textarea>
           <div class="two" style="grid-template-columns: 1fr 1fr">
-            <div><label for="volBg">Nhạc nền</label><input type="range" id="volBg" min="0" max="1" step="0.05" /></div>
-            <div><label for="volFx">Âm nghi thức</label><input type="range" id="volFx" min="0" max="1" step="0.05" /></div>
+            <div><label for="energySteps">Mốc năng lượng (xu)</label><input type="text" id="energySteps" /></div>
+            <div><label for="spotlightMin">Spotlight miễn phí mỗi (phút)</label><input type="number" id="spotlightMin" min="0.5" step="0.5" /></div>
           </div>
-          <div class="checks"><label><input type="checkbox" id="bells" /> Chuông nền mỗi 15 phút</label></div>
+          <div class="two" style="grid-template-columns: 2fr 1fr">
+            <div><label for="chatKeywords">Comment làm cây phản ứng</label><input type="text" id="chatKeywords" /></div>
+            <div><label for="chatEvery">Mỗi bao nhiêu comment</label><input type="number" id="chatEvery" min="1" /></div>
+          </div>
+        </section>
+
+        <section>
+          <h2>Nhân vật &amp; âm thanh</h2>
+          <div class="two" style="grid-template-columns: 1fr 1fr">
+            <div><label for="max">Số nhân vật tối đa</label><input type="number" id="max" min="0" /></div>
+            <div><label for="protectMin">Giữ chỗ sau khi tặng quà (phút)</label><input type="number" id="protectMin" min="0" max="120" /></div>
+            <div><label for="volBg">Nhạc nền</label><input type="range" id="volBg" min="0" max="1" step="0.05" /></div>
+            <div><label for="volFx">Âm hiệu ứng</label><input type="range" id="volFx" min="0" max="1" step="0.05" /></div>
+          </div>
         </section>
 
         <div class="savebar">
@@ -167,10 +194,9 @@
 
         <section>
           <h2>Đặt lại</h2>
-          <p class="desc">Không hoàn tác được. Cấu hình luôn được giữ.</p>
+          <p class="desc">Vòng mới: điều ước bay đi hết trừ 5 điều ước năng lượng cao nhất, cây về cấp 1, mốc tính lại. Đặt lại phiên: xóa sạch. Không hoàn tác được.</p>
           <div class="row">
-            <button class="danger" id="resetCrowd">Xóa nhân vật</button>
-            <button class="danger" id="resetGoal">Đặt lại mục tiêu</button>
+            <button class="danger" id="newRound">Vòng mới</button>
             <button class="danger" id="resetSession">Đặt lại cả phiên</button>
           </div>
         </section>
@@ -182,11 +208,19 @@
           <p class="desc">Sự kiện giả lập mang nhãn [TEST] và đếm riêng, không cộng vào số liệu live. Giả lập số lượng lớn tự khóa khi overlay đã nhận sự kiện thật.</p>
           <div class="row">
             <button data-sim="join">Có người vào</button>
-            <button data-sim="chat">Comment cầu nguyện</button>
+            <button data-sim="wish">Viết điều ước</button>
+            <button data-sim="badWish">Điều ước bị chặn</button>
             <button data-sim="like">Thả tim</button>
-            <button data-sim="share">Chia sẻ</button>
+            <button data-sim="chatReact">Chat làm cây rung</button>
           </div>
-          <label for="simGift">Tặng quà</label>
+          <label>Quà theo tầng (tặng cho người vừa ước gần nhất)</label>
+          <div class="row" style="margin-top: 0">
+            <button data-tier="small">Nhỏ</button>
+            <button data-tier="medium">Vừa</button>
+            <button data-tier="big">Lớn</button>
+            <button data-tier="huge">Rất lớn</button>
+          </div>
+          <label for="simGift">Quà theo tên</label>
           <div class="row" style="margin-top: 0">
             <select id="simGift" style="flex: 2"></select>
             <select id="simCombo" style="flex: 1" aria-label="Số lượng">
@@ -195,7 +229,12 @@
             <button id="simGiftBtn">Gửi</button>
           </div>
           <div class="row">
-            <button class="bulk" data-bulk="virtual50">Thêm 50 người</button>
+            <button data-sim="combo">Combo siêu phóng</button>
+            <button data-sim="levelUp">Lên cấp nhanh</button>
+            <button data-sim="spotlight">Spotlight ngay</button>
+          </div>
+          <div class="row">
+            <button class="bulk" data-bulk="crowd">Thêm 40 người</button>
             <button class="bulk" data-bulk="stress">Dồn sự kiện 10 giây</button>
             <button class="bulk" data-bulk="leak">Đo rò bộ nhớ (10 vòng)</button>
           </div>
@@ -207,7 +246,7 @@
 
         <section>
           <h2>Nhật ký sự kiện</h2>
-          <p class="desc">50 sự kiện thô gần nhất từ TikFinity. Khi live thử, copy vào <code>test/fixtures/events.json</code> để kiểm lại cách đếm quà.</p>
+          <p class="desc">50 sự kiện thô gần nhất từ TikFinity, kèm điều ước bị chặn. Khi live thử, copy vào <code>test/fixtures/events.json</code> để kiểm lại cách đếm quà.</p>
           <div class="row"><button id="copyLog">Copy nhật ký</button></div>
           <pre id="log"></pre>
         </section>

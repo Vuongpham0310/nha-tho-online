@@ -1,8 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createQueue, caption, RITUALS } from "../src/rituals.js";
+import { createQueue } from "../src/queue.js";
 import { createSeats } from "../src/seats.js";
-import { normText, isPrayer, clip } from "../src/text.js";
 
 // Handle giả: xong sau `dur` giây.
 function setup({ dur = 1, failOn } = {}) {
@@ -28,11 +27,6 @@ function setup({ dur = 1, failOn } = {}) {
 }
 
 const add = (q, id, key, giftId = "g", count = 1, size = "small") => q.enqueue({ ritualId: id, size, key, nickname: key, giftId, count });
-
-test("9 nghi thức, id không trùng", () => {
-  assert.equal(RITUALS.length, 9);
-  assert.equal(new Set(RITUALS.map((r) => r.id)).size, 9);
-});
 
 test("gộp theo ritualId trong 2s, giữ đúng count theo giftId", () => {
   const { q, adv } = setup();
@@ -76,16 +70,11 @@ test("tràn hàng đợi bỏ small cũ nhất, không mất mục big", () => {
   const { q } = setup();
   add(q, "dang-hoa", "big1", "g", 1, "big");
   for (let i = 0; i < 40; i++) {
-    const id = RITUALS[i % 5].id + "-" + i; // id khác nhau để không gộp
+    const id = ["a", "b", "c", "d", "e"][i % 5] + "-" + i; // id khác nhau để không gộp
     add(q, id, "u" + i);
   }
   assert.equal(q.pending, 30);
   assert.ok(q.dropped > 0);
-});
-
-test("caption: tối đa 3 tên + 'và N người khác', có ×tổng", () => {
-  const e = { ritualId: "thap-nen", total: 7, users: ["A", "B", "C", "D", "E"].map((n) => ({ key: n, nickname: n })) };
-  assert.equal(caption(e), "A, B, C và 2 người khác thắp nến khấn ×7");
 });
 
 test("2 nghi thức của cùng 1 người không chồng animation nhân vật", () => {
@@ -136,18 +125,4 @@ test("lỗi khi bắt đầu hoặc khi chạy vẫn nhả khóa", () => {
   q2.tick(0);
   q2.tick(0.1);
   assert.equal(s2.users.get("x").busy, false);
-});
-
-test("normText + isPrayer: các biến thể cầu nguyện, emoji, bỏ dấu", () => {
-  assert.equal(normText("Lạy Chúa Giêsu 🙏"), "laychuagiesu");
-  for (const s of ["Amen", "AMEN 🙏🙏", "a men", "Kính mừng Maria", "kinh mung maria", "Lạy Chúa", "Xin Chúa thương xót", "Alleluia!!!", "Tạ ơn Chúa"]) {
-    assert.ok(isPrayer(s), s);
-  }
-  for (const s of ["hello", "🙏", "", "mua hàng đi"]) assert.equal(isPrayer(s), false, s);
-  assert.ok(isPrayer("đẹp quá", ["dep qua"]));
-});
-
-test("clip không cắt đôi emoji", () => {
-  assert.equal(clip("🙏🙏🙏🙏", 3), "🙏🙏…");
-  assert.equal(clip("abc", 5), "abc");
 });
