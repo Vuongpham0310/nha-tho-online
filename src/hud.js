@@ -10,6 +10,8 @@ function el(tag, cls, parent, text) {
   return e;
 }
 
+const setText = (e, s) => e.textContent !== s && (e.textContent = s);
+
 // Thánh giá nét mảnh giữa hai đường chỉ (SVG tự vẽ, chữ của mình nên an toàn)
 function crossMark() {
   const ns = "http://www.w3.org/2000/svg";
@@ -26,7 +28,7 @@ function crossMark() {
   return svg;
 }
 
-export function createHud(root, { onUnlockAudio }) {
+export function createHud(root) {
   const banner = el("div", "banner", root);
   el("div", "rule", banner).appendChild(crossMark());
   const banner1 = el("div", "banner-1", banner);
@@ -51,11 +53,8 @@ export function createHud(root, { onUnlockAudio }) {
 
   const caption = el("div", "caption", root);
   const captionText = el("div", "caption-clamp", caption);
-  const toasts = el("div", "toasts", root);
   const disclaimer = el("div", "disclaimer", root, "Không gian cầu nguyện mang tính biểu tượng · Quà tặng là ủng hộ kênh");
 
-  const audioBtn = el("button", "audio-btn", root, "Bật âm thanh");
-  audioBtn.addEventListener("click", () => onUnlockAudio());
 
   // Dòng 1 luôn nằm trên một dòng: thu nhỏ chữ tới khi vừa (tối thiểu 36px)
   function fitBanner() {
@@ -86,15 +85,14 @@ export function createHud(root, { onUnlockAudio }) {
     setDisclaimer(on) {
       disclaimer.hidden = !on;
     },
-    setAudioButton(show) {
-      audioBtn.hidden = !show;
-    },
+    // Gọi 4 lần/giây: chỉ chạm DOM khi số liệu đổi
     counts(view, viewerCount, goalText, goalCur, goalTarget) {
-      prayerCounts.textContent = `${view.prayers} lời · ${view.prayerUsers.size} người · ${view.shares} chia sẻ`;
-      viewers.textContent = viewerCount ? `${viewerCount} đang xem` : "";
-      goalLabel.textContent = clip(goalText, 20);
-      goalNum.textContent = `${goalCur}/${goalTarget}`;
-      goalFill.style.width = Math.min(100, (goalCur / Math.max(1, goalTarget)) * 100) + "%";
+      setText(prayerCounts, `${view.prayers} lời · ${view.prayerUsers.size} người · ${view.shares} chia sẻ`);
+      setText(viewers, viewerCount ? `${viewerCount} đang xem` : "");
+      setText(goalLabel, clip(goalText, 20));
+      setText(goalNum, `${goalCur}/${goalTarget}`);
+      const w = Math.min(100, (goalCur / Math.max(1, goalTarget)) * 100) + "%";
+      if (goalFill.style.width !== w) goalFill.style.width = w;
     },
     // Chỉ comment cầu nguyện mới vào bảng; giữ 5 dòng mới nhất
     feed(nickname, text) {
@@ -103,13 +101,6 @@ export function createHud(root, { onUnlockAudio }) {
       el("div", "f-text", li, clip(text, 34));
       feed.prepend(li);
       while (feed.children.length > 5) feed.lastChild.remove();
-    },
-    toast(nickname) {
-      const t = el("div", "toast", toasts);
-      el("b", "", t, clip(nickname, 22));
-      t.append(" vào nhà thờ");
-      while (toasts.children.length > 3) toasts.firstChild.remove();
-      setTimeout(() => t.remove(), 3500);
     },
     caption(text, size) {
       captionText.textContent = clip(text, 90);

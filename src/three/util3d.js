@@ -36,69 +36,32 @@ export function mk(geo, mat, pos, parent) {
   return m;
 }
 
+// Texture quầng sáng dùng chung theo màu (không ai sửa texture nên chia sẻ được)
+const glowCache = new Map();
 export function glowTex(color = "255,220,140") {
-  return canvasTex(128, 128, (g, w, h) => {
-    const r = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2);
-    r.addColorStop(0, "rgba(" + color + ",1)");
-    r.addColorStop(0.35, "rgba(" + color + ",0.35)");
-    r.addColorStop(1, "rgba(" + color + ",0)");
-    g.fillStyle = r;
-    g.fillRect(0, 0, w, h);
-  });
-}
-
-export function glowPlane(w, h, color, opacity) {
-  return new THREE.Mesh(
-    new THREE.PlaneGeometry(w, h),
-    new THREE.MeshBasicMaterial({ map: glowTex(color), transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false })
-  );
-}
-
-export function glowSprite(size, color, opacity) {
-  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex(color), transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false }));
-  s.scale.set(size, size, 1);
-  return s;
+  let t = glowCache.get(color);
+  if (!t) {
+    t = canvasTex(128, 128, (g, w, h) => {
+      const r = g.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2);
+      r.addColorStop(0, "rgba(" + color + ",1)");
+      r.addColorStop(0.35, "rgba(" + color + ",0.35)");
+      r.addColorStop(1, "rgba(" + color + ",0)");
+      g.fillStyle = r;
+      g.fillRect(0, 0, w, h);
+    });
+    glowCache.set(color, t);
+  }
+  return t;
 }
 
 // Bật đổ bóng cho các mesh vật liệu chuẩn. maxY: bỏ qua vật ở trên cao (trần, xà) để ánh nắng lọt vào.
-export function shadowify(root, maxY = 99) {
+function shadowify(root, maxY = 99) {
   const p = new THREE.Vector3();
   root.traverse((o) => {
     if (!o.isMesh || !o.material || !o.material.isMeshStandardMaterial) return;
     o.getWorldPosition(p);
     o.receiveShadow = true;
-    o.castShadow = p.y < maxY || !!o.userData.cast;
-  });
-}
-
-// Tạo nếp gấp vải: làm lượn bán kính theo góc quanh trục Y (cho hình tròn xoay / cầu).
-export function foldGeometry(geo, folds, amp, yFrom = -1e9, yTo = 1e9) {
-  const p = geo.attributes.position;
-  for (let i = 0; i < p.count; i++) {
-    const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
-    if (y < yFrom || y > yTo) continue;
-    const a = Math.atan2(x, z);
-    const k = 1 + amp * Math.sin(a * folds + y * 2.2);
-    p.setXYZ(i, x * k, y, z * k);
-  }
-  geo.computeVertexNormals();
-  return geo;
-}
-
-// Trụ nối hai điểm (dùng cho tay, chân tượng)
-export function limb(a, b, r1, r2, mat, parent) {
-  const A = new THREE.Vector3(...a), B = new THREE.Vector3(...b);
-  const len = A.distanceTo(B);
-  const m = new THREE.Mesh(new THREE.CylinderGeometry(r2, r1, len, 20), mat);
-  m.position.copy(A).add(B).multiplyScalar(0.5);
-  m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), B.clone().sub(A).normalize());
-  parent.add(m);
-  return m;
-}
-
-export function markCast(root) {
-  root.traverse((o) => {
-    o.userData.cast = true;
+    o.castShadow = p.y < maxY;
   });
 }
 

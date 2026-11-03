@@ -120,6 +120,8 @@ function setStatus(id, cls, text) {
   $(id).textContent = text;
 }
 
+let renderedLog = "";
+let renderedLeak = 0;
 function render() {
   const age = Date.now() - lastAt;
   if (!last) setStatus("overlayStatus", "wait", "Đang chờ overlay…");
@@ -138,14 +140,20 @@ function render() {
   $("tMode").textContent = last.stats.mode;
   $("tPray").textContent = `${last.stats.prayers}/${last.stats.prayerUsers}`;
   $("tAudio").textContent = last.audio === "on" ? "Bật" : "Tắt";
-  $("audioHint").textContent = last.audio === "on" ? "" : "Âm thanh chưa bật: bấm nút “Bật âm thanh” trên trang overlay.";
+  $("audioHint").textContent = last.audio === "on" ? "" : "Âm thanh chưa bật: bấm chuột một lần vào cửa sổ overlay.";
   $("pause").textContent = last.paused ? "Tiếp tục tương tác" : "Tạm dừng tương tác";
   for (const b of document.querySelectorAll(".bulk")) {
     b.disabled = last.sawLive;
     b.title = last.sawLive ? "Đã nhận sự kiện LIVE thật: giả lập lớn bị khóa" : "";
   }
-  $("log").textContent = last.rawLog.map((r) => `[${new Date(r.t).toLocaleTimeString()}] ${r.kind === "warn" ? "⚠ " : ""}${r.text}`).join("\n");
-  if (last.leakRows.length) {
+  // Nhật ký/bảng đo chỉ vẽ lại khi có dòng mới, để không mất vùng chữ đang bôi đen
+  const logKey = last.rawLog.length + ":" + (last.rawLog.at(-1)?.t ?? 0);
+  if (logKey !== renderedLog) {
+    renderedLog = logKey;
+    $("log").textContent = last.rawLog.map((r) => `[${new Date(r.t).toLocaleTimeString()}] ${r.kind === "warn" ? "⚠ " : ""}${r.text}`).join("\n");
+  }
+  if (last.leakRows.length && last.leakRows.length !== renderedLeak) {
+    renderedLeak = last.leakRows.length;
     $("leak").hidden = false;
     $("leak").tBodies[0].replaceChildren(
       ...last.leakRows.map((r) => {

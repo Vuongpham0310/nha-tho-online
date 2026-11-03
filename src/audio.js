@@ -1,5 +1,5 @@
-// Âm thanh WebAudio, 2 kênh: nền (organ) + nghi thức (chuông, thánh ca).
-// Không có file thì tự tổng hợp; có public/audio/organ.mp3 hoặc bell.mp3 thì dùng file.
+// Âm thanh WebAudio, 2 kênh: nhạc nền (lặp liên tục) + nghi thức (chuông, thánh ca).
+// Nhạc nền lấy từ public/audio/nhac-nen.mp3; thiếu file thì tự tổng hợp hợp âm organ. Chuông: bell.mp3 nếu có.
 
 const MAX_FX = 3;
 // Vòng hợp âm chậm: C - Am - F - G (tần số Hz)
@@ -26,11 +26,11 @@ export function createAudio() {
     } catch {}
   }
 
-  // Organ tổng hợp: 4 giọng sine/triangle qua lowpass, đổi hợp âm mỗi 8s
-  function startOrgan() {
-    if (files.organ) {
+  // Nhạc nền: file nhac-nen.mp3 lặp liên tục; thiếu file thì organ tổng hợp 4 giọng qua lowpass, đổi hợp âm mỗi 8s
+  function startBackground() {
+    if (files["nhac-nen"]) {
       const src = ctx.createBufferSource();
-      src.buffer = files.organ;
+      src.buffer = files["nhac-nen"];
       src.loop = true;
       src.connect(duck);
       src.start();
@@ -108,8 +108,8 @@ export function createAudio() {
       duck.connect(bg).connect(ctx.destination);
       fx.connect(ctx.destination);
       api.setVolumes(vol.bg, vol.fx);
-      await Promise.all([loadFile("organ"), loadFile("bell")]);
-      startOrgan();
+      await Promise.all([loadFile("nhac-nen"), loadFile("bell")]);
+      startBackground();
     },
     setVolumes(b, f) {
       vol = { bg: b, fx: f };

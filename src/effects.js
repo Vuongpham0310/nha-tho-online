@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { glowTex, canvasTex } from "./three/util3d.js";
+import { CANDLE_RACK } from "./shared.js";
 
 // Hiệu ứng cho từng nghi thức. start(entry) trả handle { update(dt) -> xong?, cancel() }.
 // Khóa nhân vật: entry.actor do overlay khóa sẵn; hiệu ứng nhóm tự khóa thêm vào entry.extraLocks.
@@ -142,7 +143,6 @@ export function createEffects({ scene, church, crowd, audio }) {
             p.act("sign", 2.6);
           } },
         ],
-        done: () => {},
       });
     },
 
@@ -163,12 +163,11 @@ export function createEffects({ scene, church, crowd, audio }) {
 
     "quy-cau-nguyen"(entry) {
       const p = actorOf(entry);
-      let halo = null;
       return timeline(5, {
         steps: [{ at: 0, fn: () => {
           if (!p) return;
           p.setState("kneeling");
-          halo = spawn({ tex: "warm", from: headOf(p), vel: new THREE.Vector3(), life: 5, size: 1.6 });
+          spawn({ tex: "warm", from: headOf(p), vel: new THREE.Vector3(), life: 5, size: 1.6 });
         } }],
         done: () => sitBack(entry.actor, p),
       });
@@ -259,7 +258,7 @@ export function createEffects({ scene, church, crowd, audio }) {
           acc += dt;
           while (acc > 0.12) {
             acc -= 0.12;
-            const from = new THREE.Vector3(-6.6 + rand(2.6), 1.2, -11.2 + rand(0.6));
+            const from = new THREE.Vector3(CANDLE_RACK.x + rand(2.6), 1.2, CANDLE_RACK.z + rand(0.6));
             spawn({ tex: "warm", from, vel: new THREE.Vector3(rand(0.2), 1.2, 0), life: 3, size: 0.3 });
           }
         },

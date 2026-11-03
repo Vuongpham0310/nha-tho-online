@@ -1,5 +1,8 @@
 import * as THREE from "three";
+import { mergeVertices } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { std, gold, canvasTex, mk, glowTex, mergeStatic } from "./util3d.js";
+import { angel, wings } from "./statues.js";
+import { statueImage } from "./models.js";
 import { HALL, SANCTUARY, ALTAR_Z, TABERNACLE, MARY, FLOWER_STAND, CANDLE_RACK, AISLE } from "../shared.js";
 
 const W = HALL.halfW * 2;
@@ -115,6 +118,42 @@ function roseTex() {
   });
 }
 
+// Ô cửa hoa văn trắng trên nền tối (sau thánh giá)
+function latticeTex() {
+  return canvasTex(256, 256, (g, w, h) => {
+    g.fillStyle = "#4a5262";
+    g.fillRect(0, 0, w, h);
+    g.strokeStyle = "#e9e5dc";
+    g.lineWidth = 5;
+    for (let y = 0; y <= 4; y++)
+      for (let x = 0; x <= 4; x++) {
+        g.beginPath();
+        g.arc(x * 64, y * 64, 32, 0, Math.PI * 2);
+        g.stroke();
+      }
+  }, [3, 3]);
+}
+
+// Trụ nối hai điểm (tay, chân tượng, cán chân nến)
+function beam(a, b, r, mat, parent) {
+  const A = new THREE.Vector3(...a), B = new THREE.Vector3(...b);
+  const m = mk(new THREE.CylinderGeometry(r, r * 0.85, A.distanceTo(B), 10), mat, null, parent);
+  m.position.copy(A).add(B).multiplyScalar(0.5);
+  m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), B.sub(A).normalize());
+  return m;
+}
+
+// Bó hoa hướng dương trong bình vàng
+function sunflowers(parent, x, y, z) {
+  mk(new THREE.CylinderGeometry(0.22, 0.16, 0.5, 12), gold(), [x, y + 0.25, z], parent);
+  const petal = std(0xf2b81c, { roughness: 0.8 });
+  const core = std(0x4a2a12, { roughness: 1 });
+  for (const [dx, dy] of [[0, 0.95], [-0.32, 0.75], [0.32, 0.78], [-0.15, 0.55], [0.18, 0.55]]) {
+    mk(new THREE.CylinderGeometry(0.2, 0.2, 0.04, 14), petal, [x + dx, y + dy, z + 0.1], parent).rotation.x = Math.PI / 2;
+    mk(new THREE.CylinderGeometry(0.09, 0.09, 0.05, 10), core, [x + dx, y + dy, z + 0.13], parent).rotation.x = Math.PI / 2;
+  }
+}
+
 const glassMat = (tex) => new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide, toneMapped: false });
 const flameMat = (color, opacity = 0.95) => new THREE.SpriteMaterial({ map: glowTex(color), transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false });
 
@@ -183,37 +222,118 @@ export function buildChurch(scene) {
     mk(new THREE.BoxGeometry(W * 0.6, h, 0.45), marble, [0, h / 2, SANCTUARY.zFront + 0.22 + i * 0.45], stat);
   }
 
-  // Bàn thờ phủ khăn trắng + nến
+  // Bàn thờ phủ khăn trắng (nến đặt trên bậc phía sau, như ảnh mẫu)
   mk(new THREE.BoxGeometry(5, 1.1, 1.8), marble, [0, SY + 0.55, ALTAR_Z], stat);
   mk(new THREE.BoxGeometry(5.3, 0.06, 2), std(0xffffff, { roughness: 1 }), [0, SY + 1.13, ALTAR_Z], stat);
   mk(new THREE.BoxGeometry(5.3, 0.55, 0.04), std(0xfbf8f0, { roughness: 1 }), [0, SY + 0.85, ALTAR_Z + 1.01], stat);
   mk(new THREE.BoxGeometry(5.3, 0.08, 0.05), gd, [0, SY + 0.6, ALTAR_Z + 1.03], stat);
-  for (const x of [-2, -1.2, 1.2, 2]) {
-    mk(new THREE.CylinderGeometry(0.07, 0.12, 0.5, 10), gd, [x, SY + 1.4, ALTAR_Z - 0.3], stat);
-    mk(new THREE.CylinderGeometry(0.06, 0.06, 0.45, 10), std(0xfffbef), [x, SY + 1.87, ALTAR_Z - 0.3], stat);
-    const f = new THREE.Sprite(flameMat("255,200,120"));
-    f.scale.set(0.5, 0.7, 1);
-    f.position.set(x, SY + 2.2, ALTAR_Z - 0.3);
-    root.add(f);
+  for (const s of [-1, 1]) sunflowers(stat, s * 2.1, SY + 1.16, ALTAR_Z + 0.4);
+
+  // Tường trắng sau bàn thờ + ô cửa vòm hoa văn
+  const white = std(0xf4f1ea, { roughness: 0.6 });
+  mk(new THREE.BoxGeometry(17, 21, 0.4), white, [0, SY + 10.5, HALL.zBack + 0.3], stat);
+  const lattice = new THREE.MeshBasicMaterial({ map: latticeTex() });
+  mk(new THREE.PlaneGeometry(7, 6), lattice, [0, SY + 10.5, HALL.zBack + 0.52], root);
+  mk(new THREE.CircleGeometry(3.5, 32, 0, Math.PI), lattice, [0, SY + 13.5, HALL.zBack + 0.52], root);
+  mk(new THREE.TorusGeometry(3.75, 0.3, 8, 32, Math.PI), white, [0, SY + 13.5, HALL.zBack + 0.6], stat);
+  for (const s of [-1, 1]) mk(new THREE.BoxGeometry(0.6, 6, 0.4), white, [s * 3.75, SY + 10.5, HALL.zBack + 0.6], stat);
+
+  // Hai cột trắng đầu cột kiểu Côranh
+  for (const s of [-1, 1]) {
+    const x = s * 7.6, z = HALL.zBack + 1.3;
+    mk(new THREE.BoxGeometry(1.6, 1, 1.6), white, [x, SY + 0.5, z], stat);
+    mk(new THREE.CylinderGeometry(0.55, 0.6, 14, 20), white, [x, SY + 8, z], stat);
+    mk(new THREE.CylinderGeometry(0.95, 0.6, 1.2, 20), white, [x, SY + 15.6, z], stat);
+    mk(new THREE.BoxGeometry(2.1, 0.4, 2.1), white, [x, SY + 16.4, z], stat);
+    for (const v of [-1, 1]) mk(new THREE.TorusGeometry(0.22, 0.09, 6, 14), white, [x + v * 0.85, SY + 15.8, z + 0.75], stat);
   }
 
-  // Phông sau + thánh giá (đơn giản, trang nghiêm)
-  mk(new THREE.BoxGeometry(10, 15, 0.3), std(0x5a1418, { roughness: 0.9 }), [0, SY + 7.5, HALL.zBack + 0.4], stat);
-  for (const [w, h, x, y] of [[10.4, 0.4, 0, SY + 15], [0.4, 15, -5.2, SY + 7.5], [0.4, 15, 5.2, SY + 7.5]]) mk(new THREE.BoxGeometry(w, h, 0.4), gd, [x, y, HALL.zBack + 0.45], stat);
-  const crossMat = std(0x3a2214, { roughness: 0.6 });
-  mk(new THREE.BoxGeometry(0.5, 9, 0.35), crossMat, [0, SY + 7.8, HALL.zBack + 0.8], stat);
-  mk(new THREE.BoxGeometry(4.2, 0.5, 0.35), crossMat, [0, SY + 9.6, HALL.zBack + 0.8], stat);
-  const crossGlow = new THREE.Sprite(flameMat("255,230,170", 0.35));
-  crossGlow.scale.set(9, 11, 1);
-  crossGlow.position.set(0, SY + 8.5, HALL.zBack + 0.6);
+  // Núi Sọ: đá nâu dưới chân thánh giá
+  // Đá tròn cạnh, bề mặt gồ ghề tự nhiên, 2 tông nâu
+  const rr = rng(23);
+  const rocks = [std(0x6e3f24, { roughness: 0.95 }), std(0x5a3220, { roughness: 0.95 })];
+  for (let i = 0; i < 14; i++) {
+    // Gộp đỉnh trùng để pháp tuyến mượt (Icosahedron mặc định tách đỉnh theo mặt)
+    const ico = new THREE.IcosahedronGeometry(1, 3);
+    ico.deleteAttribute("normal");
+    ico.deleteAttribute("uv");
+    const geo = mergeVertices(ico);
+    const p = geo.attributes.position;
+    const v = new THREE.Vector3();
+    for (let j = 0; j < p.count; j++) {
+      v.fromBufferAttribute(p, j);
+      // Nhiễu theo hướng (không theo đỉnh) để các đỉnh trùng nhau dịch giống nhau, không bị nứt
+      const n = 1 + 0.16 * Math.sin(v.x * 3.1 + i) * Math.cos(v.y * 2.7 - i) + 0.07 * Math.sin(v.z * 7 + v.x * 5);
+      p.setXYZ(j, v.x * n, v.y * n * 0.72, v.z * n);
+    }
+    geo.computeVertexNormals();
+    const r = 0.9 + rr() * 0.9;
+    const m = mk(geo, rocks[i % 2], [(rr() - 0.5) * 8, SY + 2.6 + rr() * 2.2, HALL.zBack + 1.6 + rr() * 0.9], stat);
+    m.scale.setScalar(r);
+    m.rotation.y = rr() * 6;
+  }
+
+  // Thánh giá có tượng Chúa
+  const CB = SY + 4.5, CZ = HALL.zBack + 1.4;
+  statueImage(root, "crucifix", { height: 11.5, y: CB - 0.4, z: CZ });
+  const crossGlow = new THREE.Sprite(flameMat("255,236,190", 0.3));
+  crossGlow.scale.set(8, 11, 1);
+  crossGlow.position.set(0, CB + 7.5, HALL.zBack + 0.9);
   root.add(crossGlow);
 
-  // Nhà Tạm + đèn chầu đỏ
-  mk(new THREE.BoxGeometry(1.8, 1.6, 1.2), marble, [TABERNACLE.x, SY + 0.8, TABERNACLE.z], stat);
-  mk(new THREE.BoxGeometry(1.2, 1.3, 0.9), gd, [TABERNACLE.x, SY + 2.25, TABERNACLE.z], stat);
-  mk(new THREE.BoxGeometry(0.08, 0.5, 0.08), gd, [TABERNACLE.x, SY + 3.15, TABERNACLE.z], stat);
-  mk(new THREE.BoxGeometry(0.3, 0.08, 0.08), gd, [TABERNACLE.x, SY + 3.25, TABERNACLE.z], stat);
-  const lampPos = new THREE.Vector3(TABERNACLE.x + 2.4, SY + 2.6, TABERNACLE.z + 0.5);
+  // Đức Mẹ (trái) và thánh Gioan (phải) đứng hai bên thánh giá
+  statueImage(root, "mary", { height: 4.6, x: -3.4, y: SY + 4.2, z: HALL.zBack + 2.4 });
+  statueImage(root, "john", { height: 4.8, x: 3.4, y: SY + 4.2, z: HALL.zBack + 2.4 });
+
+  // Bệ thờ phía sau: cửa Nhà Tạm, bậc nến, khám tượng Thánh Tâm
+  const ivory = std(0xf3ede0, { roughness: 0.5 });
+  const TZ = TABERNACLE.z;
+  mk(new THREE.BoxGeometry(9, 1.6, 1.2), ivory, [0, SY + 0.8, TZ], stat);
+  for (const x of [-3.6, -2.6, -1.6, 1.6, 2.6, 3.6]) mk(new THREE.BoxGeometry(0.7, 1, 0.06), gd, [x, SY + 0.8, TZ + 0.62], stat);
+  mk(new THREE.BoxGeometry(1.3, 1.25, 0.1), gd, [0, SY + 0.8, TZ + 0.64], stat);
+  mk(new THREE.BoxGeometry(9.2, 0.12, 1.3), gd, [0, SY + 1.62, TZ], stat);
+  mk(new THREE.BoxGeometry(7.2, 0.45, 0.8), ivory, [0, SY + 1.9, TZ - 0.1], stat);
+  for (const s of [-1, 1])
+    for (const k of [1.6, 2.5, 3.4]) {
+      mk(new THREE.CylinderGeometry(0.07, 0.16, 0.5, 10), gd, [s * k, SY + 2.37, TZ - 0.1], stat);
+      mk(new THREE.CylinderGeometry(0.07, 0.07, 1.2, 10), std(0xfffbef), [s * k, SY + 3.22, TZ - 0.1], stat);
+      const f = new THREE.Sprite(flameMat("255,200,120"));
+      f.scale.set(0.45, 0.65, 1);
+      f.position.set(s * k, SY + 3.95, TZ - 0.1);
+      root.add(f);
+    }
+  const NZ = TZ - 0.1;
+  mk(new THREE.BoxGeometry(2, 0.3, 1), gd, [0, SY + 2.27, NZ], stat);
+  mk(new THREE.PlaneGeometry(1.4, 2.4), new THREE.MeshBasicMaterial({ color: 0xf3dca2 }), [0, SY + 3.5, NZ - 0.4], root);
+  for (const s of [-1, 1]) mk(new THREE.CylinderGeometry(0.1, 0.1, 2.3, 10), std(0x8a3a2a, { roughness: 0.5 }), [s * 0.82, SY + 3.55, NZ + 0.3], stat);
+  mk(new THREE.BoxGeometry(2.2, 0.3, 1.1), gd, [0, SY + 4.8, NZ], stat);
+  mk(new THREE.TorusGeometry(0.82, 0.12, 8, 24, Math.PI), gd, [0, SY + 4.95, NZ + 0.3], stat);
+  mk(new THREE.SphereGeometry(0.45, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), gd, [0, SY + 5.0, NZ], stat);
+  mk(new THREE.BoxGeometry(0.08, 0.6, 0.08), gd, [0, SY + 6.0, NZ], stat);
+  mk(new THREE.BoxGeometry(0.36, 0.08, 0.08), gd, [0, SY + 6.1, NZ], stat);
+  statueImage(root, "sacred-heart", { height: 2.15, y: SY + 2.42, z: NZ + 0.05 });
+
+  // Hai thiên thần trắng có cánh, tay cầm chân nến
+  for (const s of [-1, 1]) {
+    const a = new THREE.Group();
+    a.position.set(s * 6.3, SY, TZ + 0.7);
+    stat.add(a);
+    mk(new THREE.BoxGeometry(1.1, 1.2, 1.1), ivory, [0, 0.6, 0], a);
+    angel(a, { y: 1.2, s: 0.95, ry: -s * 0.2 });
+    wings(a, 2.5, -0.3);
+    beam([s * 0.5, 2.0, 0.4], [s * 0.6, 4.3, 0.4], 0.05, gd, a);
+    mk(new THREE.BoxGeometry(1.1, 0.06, 0.06), gd, [s * 0.6, 4.3, 0.4], a);
+    for (const dx of [-0.45, 0, 0.45]) {
+      mk(new THREE.CylinderGeometry(0.05, 0.05, 0.4, 8), std(0xfffbef), [s * 0.6 + dx, 4.53, 0.4], a);
+      const f = new THREE.Sprite(flameMat("255,200,120"));
+      f.scale.set(0.32, 0.45, 1);
+      f.position.set(s * 6.3 + s * 0.6 + dx, SY + 4.95, TZ + 1.1);
+      root.add(f);
+    }
+  }
+
+  // Đèn chầu đỏ cạnh bệ thờ
+  const lampPos = new THREE.Vector3(4.9, SY + 2.6, TZ + 1.6);
   mk(new THREE.CylinderGeometry(0.05, 0.05, 2.4, 8), gd, [lampPos.x, SY + 1.2, lampPos.z], stat);
   mk(new THREE.CylinderGeometry(0.2, 0.15, 0.4, 14), new THREE.MeshBasicMaterial({ color: 0xc81e1e }), [lampPos.x, lampPos.y, lampPos.z], root);
   const lamp = new THREE.Sprite(flameMat("255,40,30", 0.6));
@@ -221,23 +341,16 @@ export function buildChurch(scene) {
   lamp.position.copy(lampPos);
   root.add(lamp);
   const tabGlow = new THREE.Sprite(flameMat("255,225,150", 0));
-  tabGlow.scale.set(4, 4, 1);
-  tabGlow.position.set(TABERNACLE.x, SY + 2.3, TABERNACLE.z + 0.6);
+  tabGlow.scale.set(4, 5, 1);
+  tabGlow.position.set(0, SY + 3.4, NZ + 0.6);
   root.add(tabGlow);
 
-  // Tượng Đức Mẹ: áo trắng, khăn choàng xanh, quầng vàng
+  // Tượng Đức Mẹ phía trước bên trái (nơi dâng hoa)
   const mary = new THREE.Group();
   mary.position.set(MARY.x, 0, MARY.z);
   root.add(mary);
   mk(new THREE.BoxGeometry(1.7, 1.8, 1.7), marble, [0, 0.9, 0], mary);
-  const V = (pts) => pts.map(([r, y]) => new THREE.Vector2(r, y));
-  mk(new THREE.LatheGeometry(V([[0, 1.8], [0.62, 1.8], [0.55, 2.6], [0.42, 3.6], [0.3, 4.15], [0, 4.2]]), 28), std(0xf7f3ea, { roughness: 0.8 }), [0, 0, 0], mary);
-  const mantle = mk(new THREE.LatheGeometry(V([[0.7, 1.95], [0.64, 2.7], [0.5, 3.6], [0.38, 4.2], [0.36, 4.55]]), 28, Math.PI * 0.62, Math.PI * 1.76), std(0x2f5fa8, { roughness: 0.8, side: THREE.DoubleSide }), [0, 0, 0], mary);
-  mantle.rotation.y = Math.PI;
-  mk(new THREE.SphereGeometry(0.32, 20, 16), std(0xf2d2b4, { roughness: 0.6 }), [0, 4.55, 0.02], mary);
-  mk(new THREE.SphereGeometry(0.36, 20, 16, 0, Math.PI * 2, 0, Math.PI * 0.6), std(0x2f5fa8, { roughness: 0.8 }), [0, 4.6, -0.04], mary);
-  mk(new THREE.SphereGeometry(0.13, 12, 10), std(0xf2d2b4), [0, 3.5, 0.45], mary); // tay chắp
-  mk(new THREE.TorusGeometry(0.62, 0.04, 8, 40), gd, [0, 4.65, -0.35], mary);
+  statueImage(mary, "mary", { height: 4.0, y: 1.8 });
   const maryGlow = new THREE.Sprite(flameMat("200,220,255", 0.15));
   maryGlow.scale.set(4, 5.5, 1);
   maryGlow.position.set(0, 3.4, -0.3);
@@ -333,6 +446,11 @@ export function buildChurch(scene) {
   sun.shadow.bias = -0.0004;
   sun.shadow.normalBias = 0.05;
   scene.add(sun, sun.target);
+  // Đèn rọi ấm vào cung thánh cho tượng nổi khối
+  const spot = new THREE.SpotLight(0xfff0dc, 380, 0, 0.42, 0.6, 2);
+  spot.position.set(0, 26, -12);
+  spot.target.position.set(0, SY + 8, HALL.zBack + 1.5);
+  scene.add(spot, spot.target);
   const fill = new THREE.DirectionalLight(0x9ab8ff, 0.35); // ánh kính màu xanh từ phía phải
   fill.position.set(30, 20, 0);
   scene.add(fill);

@@ -33,6 +33,8 @@ renderer.setPixelRatio(1);
 renderer.setSize(W, H, false);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+// Chỉ đồ tĩnh (cột, tượng, bàn thờ) đổ bóng nên bóng vẽ 1 lần, không vẽ lại mỗi khung
+renderer.shadowMap.autoUpdate = false;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
 stage.prepend(renderer.domElement);
@@ -43,9 +45,9 @@ const pm = new THREE.PMREMGenerator(renderer);
 scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
 pm.dispose();
 
-const camera = new THREE.PerspectiveCamera(62, W / H, 0.1, 400);
-camera.position.set(0, 12.5, 31);
-camera.lookAt(0, 5.5, -16);
+const camera = new THREE.PerspectiveCamera(52, W / H, 0.1, 400);
+camera.position.set(0, 13, 30);
+camera.lookAt(0, 6, -20);
 
 const church = buildChurch(scene);
 buildPews(scene);
@@ -62,12 +64,10 @@ const log = (kind, text) => {
 };
 const pipeline = createPipeline({ warn: (m, raw) => log("warn", m + " · " + (typeof raw === "string" ? raw : JSON.stringify(raw))) });
 const effects = createEffects({ scene, church, crowd, audio });
-const hud = createHud(document.getElementById("hud"), {
-  onUnlockAudio: async () => {
-    await audio.unlock();
-    hud.setAudioButton(audio.state !== "on");
-  },
-});
+const hud = createHud(document.getElementById("hud"));
+// Âm thanh: thử bật ngay; nếu Chrome chặn thì tự bật ở lần click/phím đầu tiên trên cửa sổ overlay (không có nút trên hình phát)
+audio.unlock();
+for (const t of ["pointerdown", "keydown"]) addEventListener(t, () => audio.unlock(), { once: true });
 
 const queue = createQueue({
   start(entry) {
@@ -94,6 +94,7 @@ function applyConfig() {
   crowd.setMax(cfg.max);
   seats.protectMs = cfg.protectMin * 60_000;
   church.lights.sun.castShadow = cfg.shadows;
+  renderer.shadowMap.needsUpdate = true;
   audio.setVolumes(cfg.volBg, cfg.volFx);
 }
 
@@ -106,7 +107,6 @@ function enqueue(id, ev, giftId = "", count = 1) {
 function join(ev) {
   const r = crowd.join(ev.key, ev.nickname, { create: !paused, isTest: ev.isTest });
   if (r.created) {
-    hud.toast(ev.nickname);
     if (cfg.freeActions) enqueue("lam-dau", ev);
   }
   return r;
@@ -322,6 +322,12 @@ connectTikFinity({
 // Chuông nền mỗi 15 phút (không gắn với quà)
 setInterval(() => cfg.bells && audio.bell(), 15 * 60_000);
 
+// Live dài nhiều giờ: bỏ mốc thả tim đã quá 1 phút để Map không phình mãi
+setInterval(() => {
+  const old = Date.now() - 60_000;
+  for (const [k, t] of lastLikeCandle) if (t < old) lastLikeCandle.delete(k);
+}, 60_000);
+
 // ---------- Vòng render ----------
 let fps = 0, frames = 0, fpsT = performance.now(), last = performance.now();
 function loop(now) {
@@ -344,10 +350,9 @@ function loop(now) {
 setInterval(() => {
   const v = stats.view;
   hud.counts(v, stats.viewers, cfg.goalLabel, v.giftTotal - v.goalBase, cfg.goalTarget);
-  hud.setAudioButton(audio.state !== "on");
 }, 250);
 
 applyConfig();
 requestAnimationFrame(loop);
 // Cho phép gọi từ console khi gỡ lỗi
-window.__nhatho = { handleRaw, metrics, crowd, queue, stats, render: () => renderer.render(scene, camera) };
+window.__nhatho = { handleRaw, metrics, crowd, queue, stats, camera, render: () => renderer.render(scene, camera) };

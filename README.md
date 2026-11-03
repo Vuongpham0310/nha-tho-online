@@ -11,7 +11,7 @@ npm run preview
 ```
 
 1. Mở TikFinity trên cùng máy và kết nối với phiên LIVE (TikFinity phát sự kiện qua `ws://localhost:21213/`).
-2. Mở overlay `http://localhost:4173/` trong **Chrome**, ở cửa sổ riêng, bấm **Bật âm thanh** một lần.
+2. Mở overlay `http://localhost:4173/` trong **Chrome**, ở cửa sổ riêng, rồi bấm chuột một lần vào cửa sổ đó để Chrome cho phát âm thanh (không có nút nào hiện trên hình phát).
 3. Mở bảng điều khiển `http://localhost:4173/control.html` trong **cùng Chrome** (tab khác).
 4. TikTok Live Studio → thêm nguồn **Window Capture** → chọn cửa sổ overlay. Không thu nhỏ (minimize) cửa sổ overlay: trình duyệt sẽ ngừng vẽ.
 
@@ -22,7 +22,11 @@ Phát triển: `npm run dev`. Test: `npm test`.
 - Overlay và control liên lạc qua `BroadcastChannel`, nên **phải cùng một trình duyệt**. OBS Browser Source chạy trình duyệt riêng nên control sẽ không điều khiển được (overlay vẫn tự chạy với cấu hình đã lưu).
 - `roomUser` chỉ là **số người đang xem**, không phải "có người vào phòng". Nhân vật được tạo khi người xem vào phòng (nếu TikFinity có phát `member`) hoặc lần đầu comment / tặng quà / thả tim / follow / chia sẻ.
 - Cấu trúc sự kiện quà/combo dựng theo tài liệu TikFinity. Khi live thử, mở "Nhật ký sự kiện thô" trên control, copy payload thật vào `test/fixtures/events.json` rồi chạy lại `npm test`. Quà thiếu cả `msgId` và `groupId` sẽ không được chống trùng (có cảnh báo trong nhật ký).
-- Âm thanh organ/chuông được tổng hợp bằng WebAudio. Muốn dùng file riêng: đặt `public/audio/organ.mp3` và/hoặc `public/audio/bell.mp3` (phải có bản quyền).
+- Nhạc nền là `public/audio/nhac-nen.mp3`, phát lặp liên tục (thay file cùng tên để đổi nhạc). Thiếu file thì tự tổng hợp hợp âm organ. Chuông dùng `public/audio/bell.mp3` nếu có, không thì tự tổng hợp. Nhạc phải có bản quyền hoặc được phép dùng.
+
+## Ảnh tượng
+
+Các tượng trong cung thánh là ảnh phẳng nền trong suốt (WebP hoặc PNG có alpha) trong `public/images/`: `crucifix`, `mary`, `john`, `sacred-heart`. Thay ảnh cùng tên là đổi tượng, không cần sửa code. Thiếu ảnh nào thì chỗ đó để trống.
 
 ## Quà → nghi thức
 
